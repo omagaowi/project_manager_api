@@ -1,8 +1,12 @@
 const express = require("express");
 const app = express();
+const cors = require("cors");
 const bodyparser = require("body-parser");
 
 const { connectToDb, getDb } = require("./db");
+
+
+app.use(cors());
 
 express.static('/static')
 
