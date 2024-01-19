@@ -1,0 +1,307 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Wishlist</title>
+    <style>
+        *{
+            margin: 0px;
+            padding: 0px;
+            box-sizing: border-box;
+            font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+        }
+
+        .container{
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        form{
+            max-width: 400px;
+            width: 90%;
+            background: #dadada;
+            height: 40px;
+            display: flex;
+            margin-bottom: 10px;
+        }
+        .form input, .form button{
+            background: none;
+            outline: none;
+            border: none;
+        }
+        .form input{
+            width: calc(100% - 40px);
+            height: 100%;
+            padding: 10px;
+        }
+        .form button{
+            width: 40px;
+            height: 100%;
+            font-size: 24px;
+        }
+        .done-projects, .all-projects{
+            max-width: 400px;
+            width: 90%;
+            height: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .project{
+            max-width: 400px;
+            width: 90%;
+            height: 35px;
+            display: flex;
+            background: #ededed;
+            margin: 10px 0px;
+        }
+        .project .label{
+            width: calc(100% - 70px);
+            display: flex;
+            padding-left: 10px;
+            align-items: center;
+        }
+        .project .actions{
+            width: auto;
+            display: flex;
+        }
+        .project button, .project .check{
+            width: 35px;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: none;
+            border: none;
+        }
+        .project svg{
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <form class="form">
+            <input type="text" name="project" placeholder="Add Project">
+            <button>+</button>
+        </form>
+        <h3 class="heading">Done</h3>
+        <div class="done-projects">
+            <!-- <div class="project">
+                <div class="label">
+                    <p>Notes App</p>
+                </div>
+                <div class="actions">
+                    <div class="check">
+                        <input type="checkbox">
+                    </div>
+                    <button>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash3" viewBox="0 0 16 16">
+                            <path d="M6.5 1h3a.5.5 0 0 1 .5.5v1H6v-1a.5.5 0 0 1 .5-.5M11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3A1.5 1.5 0 0 0 5 1.5v1H2.506a.58.58 0 0 0-.01 0H1.5a.5.5 0 0 0 0 1h.538l.853 10.66A2 2 0 0 0 4.885 16h6.23a2 2 0 0 0 1.994-1.84l.853-10.66h.538a.5.5 0 0 0 0-1h-.995a.59.59 0 0 0-.01 0zm1.958 1-.846 10.58a1 1 0 0 1-.997.92h-6.23a1 1 0 0 1-.997-.92L3.042 3.5zm-7.487 1a.5.5 0 0 1 .528.47l.5 8.5a.5.5 0 0 1-.998.06L5 5.03a.5.5 0 0 1 .47-.53Zm5.058 0a.5.5 0 0 1 .47.53l-.5 8.5a.5.5 0 1 1-.998-.06l.5-8.5a.5.5 0 0 1 .528-.47ZM8 4.5a.5.5 0 0 1 .5.5v8.5a.5.5 0 0 1-1 0V5a.5.5 0 0 1 .5-.5"/>
+                          </svg>
+                    </button>
+                </div>
+            </div> -->
+        </div>
+        <h3 class="heading">Pending</h3>
+        <div class="all-projects">
+
+        </div>
+    </div>
+    <script>
+        const thisForm = document.querySelector('.form')
+
+        let projects = JSON.parse(localStorage.getItem('projects')) || []
+        let deleteQueue = JSON.parse(localStorage.getItem('delete-queue')) || []
+
+        document.addEventListener('DOMContentLoaded', ()=>{
+            fetch('/allprojects').then(response => response.json()).then((data)=>{
+                screenData(data)
+            }).catch((err)=>{
+                displayProjects()
+                let LSdata = JSON.parse(localStorage.getItem('projects')) || []
+            })
+        })
+
+
+        thisForm.addEventListener('submit', (e)=>{
+            e.preventDefault()
+            const projectTitle = e.target.project.value
+            console.log(projectTitle)
+
+            if(projectTitle != ''){
+                const project = {
+                    title: e.target.project.value,
+                    finished: false,
+                    id: Number(Date.now())
+                }
+                     projects = JSON.parse(localStorage.getItem('projects')) || []
+                    projects.push(project)
+                    localStorage.setItem('projects', JSON.stringify(projects))
+                    displayProjects(projects)
+                fetch('/addProject', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(project),
+                })
+                .then(data => {
+                    console.log('Success');
+                }).catch((err)=>{
+                    console.log(err)
+                })
+            }
+        })
+
+        function displayProjects(allProjects){
+            console.log(allProjects)
+            document.querySelector('.done-projects').innerHTML = ``
+            document.querySelector('.all-projects').innerHTML = ``
+
+            const doneProjects = allProjects.filter(function(el){return el.finished == true}).length
+            const pendingProjects = allProjects.filter(function(el){return el.finished == false}).length
+            document.querySelectorAll('h3.heading')[0].innerHTML = `Done(${doneProjects})`
+            document.querySelectorAll('h3.heading')[1].innerHTML = `Pending(${pendingProjects})`
+
+            allProjects.forEach((project, index)=>{
+                createProjectElem(project, index)
+            })
+        }
+        
+
+        function createProjectElem(project, index){
+          const projectElem = `
+                <div class="project">
+                    <div class="label">
+                        <p>${project.title}</p>
+                    </div>
+                    <div class="actions">
+                        <div class="check">
+                            <input type="checkbox" onchange="checkFinish(${index})">
+                        </div>
+                        <button onclick="deleteProject(${index})">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash3" viewBox="0 0 16 16">
+                                <path d="M6.5 1h3a.5.5 0 0 1 .5.5v1H6v-1a.5.5 0 0 1 .5-.5M11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3A1.5 1.5 0 0 0 5 1.5v1H2.506a.58.58 0 0 0-.01 0H1.5a.5.5 0 0 0 0 1h.538l.853 10.66A2 2 0 0 0 4.885 16h6.23a2 2 0 0 0 1.994-1.84l.853-10.66h.538a.5.5 0 0 0 0-1h-.995a.59.59 0 0 0-.01 0zm1.958 1-.846 10.58a1 1 0 0 1-.997.92h-6.23a1 1 0 0 1-.997-.92L3.042 3.5zm-7.487 1a.5.5 0 0 1 .528.47l.5 8.5a.5.5 0 0 1-.998.06L5 5.03a.5.5 0 0 1 .47-.53Zm5.058 0a.5.5 0 0 1 .47.53l-.5 8.5a.5.5 0 1 1-.998-.06l.5-8.5a.5.5 0 0 1 .528-.47ZM8 4.5a.5.5 0 0 1 .5.5v8.5a.5.5 0 0 1-1 0V5a.5.5 0 0 1 .5-.5"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+          `
+          if(project.finished == true){
+            document.querySelector('.done-projects').innerHTML += projectElem
+            document.querySelectorAll('.project .check input')[index].checked = true
+          }else{
+            document.querySelector('.all-projects').innerHTML += projectElem
+            document.querySelectorAll('.project .check input')[index].checked = false
+          }
+        }
+
+        function deleteProject(index ){
+            const thisProject = projects[index]
+            fetch('/toBin', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(thisProject)
+            }).then((data)=>{
+                projects = projects.filter(function(el){return el != thisProject})
+                localStorage.setItem('projects', JSON.stringify(projects))
+                displayProjects(projects)
+            }).catch((err)=>{
+                projects = projects.filter(function(el){return el != thisProject})
+                deleteQueue.push(thisProject)
+                localStorage.setItem('delete-queue', JSON.stringify(deleteQueue))
+                localStorage.setItem('projects', JSON.stringify(projects))
+                displayProjects(projects)
+            })
+        }
+
+        function checkFinish(index){
+            const thisElem = document.querySelectorAll('.project .check input')[index]
+            if(thisElem.checked){
+                projects[0].finished = true
+                localStorage.setItem('projects', JSON.stringify(projects))
+                displayProjects(projects)
+            }else{
+                projects[0].finished = false
+                localStorage.setItem('projects', JSON.stringify(projects))
+                displayProjects(projects)
+            }
+        }
+
+
+        function screenData(allData){
+            let LSdata = JSON.parse(localStorage.getItem('projects')) || []
+            const DBdata = allData.projects
+            const DBdataMapped = DBdata.map(el => ({
+                title: el.title,
+                finished: el.finished,
+                id: el.id
+            }))
+            if(DBdataMapped != LSdata){
+                console.log(LSdata, DBdataMapped)
+            let nonLS = []
+            DBdataMapped.forEach(elem => {
+                if(!LSdata.find(el => el.id == elem.id)){
+                    nonLS.push(elem)
+                }
+            })
+            // console.log(deleteQueue)
+            nonLS.forEach(non => {
+                if(deleteQueue.find(el => el.id == non.id)){
+                    console.log(true)
+                    fetch('/toBin', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(non)
+                    }).then((data)=>{ })
+                }else{
+                    LSdata.push(non)
+                    localStorage.setItem('projects', JSON.stringify(LSdata))
+                    projects = JSON.parse(localStorage.getItem('projects'))
+                    displayProjects(projects)
+                }
+            })
+            fetch('/allprojects').then(response => response.json()).then((data2)=>{ 
+                localStorage.setItem('projects', JSON.stringify(data2.projects))
+                displayProjects(data2.projects)       
+                 LSdata.forEach(element => {
+                    if(!data2.projects.find(ele => ele.id == element.id)){ // check if on ls but not db
+                        console.log(element)
+                        if(data2.bin.find(ele => ele.id == element.id)){ // check if on bin
+                            projects.filter(function(ele){ return ele.id == element.id })
+                            localStorage.setItem('projects', JSON.stringify(projects)) //delete from LS
+                        }else{
+                            fetch('/addProject', { // else add to the project db
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json' 
+                                },
+                                body: JSON.stringify(element),
+                            }).then((data)=> {
+                                console.log('added')
+                                fetch('/allprojects').then(response => response.json()).then((data3)=>{ 
+                                    localStorage.setItem('projects', JSON.stringify(data3.projects))
+                                    projects = JSON.parse(localStorage.getItem('projects'))
+                                    displayProjects(projects)
+                                })
+                            }).catch(err => console.log(err))
+                        }
+                    } 
+                })  
+    
+            }).catch((err)=> {
+                displayProjects(projects)
+            })
+            }else{
+                displayProjects(LSdata)
+            }
+           
+
+        }
+    </script>
+</body>
+</html>
